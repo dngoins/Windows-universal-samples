@@ -126,9 +126,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\README.md" />
-  </ItemGroup>
-  <ItemGroup>
     <ImageContentTask Include="..\..\..\SharedContent\media\placeholder.png">
       <Filter>Content</Filter>
     </ImageContentTask>

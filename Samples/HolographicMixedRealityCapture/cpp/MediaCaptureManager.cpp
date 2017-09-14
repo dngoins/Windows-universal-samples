@@ -26,6 +26,13 @@ Concurrency::task<void> MediaCaptureManager::InitializeAsync(IMFDXGIDeviceManage
 {
     m_mediaCapture = ref new Windows::Media::Capture::MediaCapture;
 
+	//auto allGroups =  Windows::Media::Capture::Frames::MediaFrameSourceGroup::FindAllAsync();
+
+	// Let's filter using Linq, based on a device group with a DisplayName of "Kinect"
+
+	//auto eligibleColorGroups = allGroups->GetResults();
+
+
     m_mediaCapture->Failed += ref new MediaCaptureFailedEventHandler([](MediaCapture^ sender, MediaCaptureFailedEventArgs ^args)
     {
         // Handle MediaCapture failure notification

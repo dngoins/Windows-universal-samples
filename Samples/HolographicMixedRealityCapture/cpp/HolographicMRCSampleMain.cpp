@@ -41,6 +41,16 @@ void HolographicMRCSampleMain::SetHolographicSpace(HolographicSpace^ holographic
     m_mainPanel->Initialize(m_deviceResources);
     m_mainPanel->SetPosition(Windows::Foundation::Numerics::float3(-0.25f, 0.0f, -2.0f));
 
+	m_VideoPanel = std::make_unique<Panel>(0.20f, 0.30f, 0.01f,      // Size
+		0.5f, 0.5f, 0.5f, 1.0f);  // Color
+	m_VideoPanel->Initialize(m_deviceResources);
+	m_VideoPanel->SetPosition(Windows::Foundation::Numerics::float3(-0.25f, 0.8f, -2.0f));
+
+	m_PhotoPanel = std::make_unique<Panel>(0.20f, 0.30f, 0.01f,      // Size
+		0.5f, 0.5f, 0.5f, 1.0f);  // Color
+	m_PhotoPanel->Initialize(m_deviceResources);
+	m_PhotoPanel->SetPosition(Windows::Foundation::Numerics::float3(-0.25f, 1.2f, -2.0f));
+
     // Init button
     m_initButton.reset(new Button(Windows::Foundation::Numerics::float3(0.14f, 0.07f, 0.01f),           // Size
                                   Windows::Foundation::Numerics::float4(1.0f, 1.0f, 0.5f, 1.0f),        // Color
@@ -49,7 +59,7 @@ void HolographicMRCSampleMain::SetHolographicSpace(HolographicSpace^ holographic
                                   DX::Texture_Init));
     m_initButton->Initialize(m_deviceResources);
     m_initButton->SetPosition(Windows::Foundation::Numerics::float3(0.0f, 0.25f, 0.01f));
-    m_initButton->SetOnAirTapCallback(std::bind(&HolographicMRCSampleMain::OnButtonInitTapped, this));
+    m_initButton->SetOnAirTapCallback(std::bind(&HolographicMRCSampleMain::OnButtonInitTapped, this));	
     m_initButton->SetEnabled(true);
     m_mainPanel->AddChild(m_initButton);
 
@@ -63,7 +73,7 @@ void HolographicMRCSampleMain::SetHolographicSpace(HolographicSpace^ holographic
     m_photoButton->SetPosition(Windows::Foundation::Numerics::float3(0.0f, 0.15f, 0.01f));
     m_photoButton->SetOnAirTapCallback(std::bind(&HolographicMRCSampleMain::OnButtonPhotoTapped, this));
     m_photoButton->SetEnabled(false);
-    m_mainPanel->AddChild(m_photoButton);
+    m_PhotoPanel->AddChild(m_photoButton);
 
     // Video button
     m_videoButton.reset(new Button(Windows::Foundation::Numerics::float3(0.14f, 0.07f, 0.01f),          // Size
@@ -75,7 +85,7 @@ void HolographicMRCSampleMain::SetHolographicSpace(HolographicSpace^ holographic
     m_videoButton->SetPosition(Windows::Foundation::Numerics::float3(0.0f, 0.05f, 0.01f));
     m_videoButton->SetOnAirTapCallback(std::bind(&HolographicMRCSampleMain::OnButtonVideoTapped, this));
     m_videoButton->SetEnabled(false);
-    m_mainPanel->AddChild(m_videoButton);
+    m_VideoPanel->AddChild(m_videoButton);
 
     // Hologram button
     m_hologramButton.reset(new Button(Windows::Foundation::Numerics::float3(0.14f, 0.07f, 0.01f),       // Size
@@ -236,6 +246,16 @@ HolographicFrame^ HolographicMRCSampleMain::Update()
 #ifdef DRAW_SAMPLE_CONTENT
         // Check for new input state since the last frame.
         SpatialInteractionSourceState^ pointerState = m_spatialInputHandler->CheckForInput();
+		if (pointerState)
+		{
+			auto source = pointerState->Source;
+			auto isPressed = pointerState->IsPressed;
+
+			if (isPressed)
+			{
+				OnButtonVideoTapped();
+			}
+		}
 #endif
 
         m_timer.Tick([&]()
@@ -254,10 +274,18 @@ HolographicFrame^ HolographicMRCSampleMain::Update()
             m_cube3->Update(m_timer);
             m_cube4->Update(m_timer);
             m_mainPanel->Update(m_timer, holographicFrame, currentCoordinateSystem, pointerState);
+			m_PhotoPanel->Update(m_timer, holographicFrame, currentCoordinateSystem, pointerState);
+			m_VideoPanel->Update(m_timer, holographicFrame, currentCoordinateSystem, pointerState);
 
             DirectX::BoundingOrientedBox panelBoundingBox;
             m_mainPanel->GetBoundingBox(panelBoundingBox);
 
+			DirectX::BoundingOrientedBox photoBoundingBox;
+			m_PhotoPanel->GetBoundingBox(photoBoundingBox);
+
+			DirectX::BoundingOrientedBox videoBoundingBox;
+			m_VideoPanel->GetBoundingBox(videoBoundingBox);
+			
             auto pointerPose = SpatialPointerPose::TryGetAtTimestamp(currentCoordinateSystem, prediction->Timestamp);
             if (pointerPose != nullptr)
             {
@@ -272,11 +300,32 @@ HolographicFrame^ HolographicMRCSampleMain::Update()
                 if (panelBoundingBox.Intersects(XMLoadFloat3(&headPosition), XMLoadFloat3(&headDirection), distance))
                 {
                     m_cursor->SetDistance(distance - 0.05f);
+					OnButtonInitTapped();
                 }
                 else
                 {
                     m_cursor->SetDistance(2.0f);
                 }
+
+				if (photoBoundingBox.Intersects(XMLoadFloat3(&headPosition), XMLoadFloat3(&headDirection), distance))
+				{
+					m_cursor->SetDistance(distance - 0.05f);
+					OnButtonPhotoTapped();
+				}
+				else
+				{
+					m_cursor->SetDistance(2.0f);
+				}
+
+				if (videoBoundingBox.Intersects(XMLoadFloat3(&headPosition), XMLoadFloat3(&headDirection), distance))
+				{
+					m_cursor->SetDistance(distance - 0.05f);
+					OnButtonVideoTapped();
+				}
+				else
+				{
+					m_cursor->SetDistance(2.0f);
+				}
             }
             else
             {
@@ -386,6 +435,8 @@ bool HolographicMRCSampleMain::Render(Windows::Graphics::Holographic::Holographi
                 m_cube3->Render();
                 m_cube4->Render();
                 m_mainPanel->Render();
+				m_PhotoPanel->Render();
+				m_VideoPanel->Render();
                 m_cursor->Render();
             }
 #endif
@@ -416,6 +467,8 @@ void HolographicMRCSampleMain::OnDeviceLost()
 
     m_cursor->ReleaseDeviceDependentResources();
     m_mainPanel->ReleaseDeviceDependentResources();
+	m_PhotoPanel->ReleaseDeviceDependentResources();
+	m_VideoPanel->ReleaseDeviceDependentResources();
 #endif
 }
 
@@ -431,6 +484,9 @@ void HolographicMRCSampleMain::OnDeviceRestored()
 
     m_cursor->CreateDeviceDependentResources();
     m_mainPanel->CreateDeviceDependentResources();
+	m_PhotoPanel->CreateDeviceDependentResources();
+	m_VideoPanel->CreateDeviceDependentResources();
+
 #endif
 }
 

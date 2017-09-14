@@ -88,6 +88,9 @@ namespace HolographicMRCSample
         std::unique_ptr<SpinningCubeRenderer>                           m_cube4;
 
         std::unique_ptr<Panel>                                          m_mainPanel;
+		std::unique_ptr<Panel>                                          m_VideoPanel;
+		std::unique_ptr<Panel>                                          m_PhotoPanel;
+
         std::shared_ptr<Button>                                         m_lockButton;
         std::shared_ptr<Button>                                         m_initButton;
         std::shared_ptr<Button>                                         m_photoButton;
